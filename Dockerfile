@@ -11,9 +11,9 @@ RUN npx tsc
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production
-COPY --from=builder /app/dist ./dist
-COPY public ./public
+RUN npm ci --omit=dev
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --chown=node:node public ./public
 USER node
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
