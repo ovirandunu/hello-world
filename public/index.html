@@ -529,7 +529,7 @@
     </div>
 
     <!-- Toast -->
-    <div id="toast" id="toast"></div>
+    <div id="toast"></div>
 
     <script>
     (() => {
@@ -577,11 +577,13 @@
         }
 
         // ── Survival timer ───────────────────────────────────────────────
+        const SECONDS_PER_HOUR   = 3600;
+        const SECONDS_PER_MINUTE = 60;
         function updateTimer() {
             const elapsed = Math.floor((Date.now() - survivalStart) / 1000);
-            const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-            const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-            const s = String(elapsed % 60).padStart(2, '0');
+            const h = String(Math.floor(elapsed / SECONDS_PER_HOUR)).padStart(2, '0');
+            const m = String(Math.floor((elapsed % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE)).padStart(2, '0');
+            const s = String(elapsed % SECONDS_PER_MINUTE).padStart(2, '0');
             document.getElementById('timer-display').textContent = `${h}:${m}:${s}`;
         }
         setInterval(updateTimer, 1000);
@@ -645,7 +647,7 @@
         // ── Creature spawning ────────────────────────────────────────────
         function spawnCreature(dinoOverride) {
             if (creatures.length >= MAX_CREATURES) {
-                showToast('⚠ Island at capacity! Tame more to make room.');
+                showToast(`⚠ Island at capacity! Max ${MAX_CREATURES} creatures allowed.`);
                 return;
             }
             const dino = dinoOverride || pick(DINOS);
@@ -694,7 +696,7 @@
             if (meta.posX > 92) { meta.dirX = -1; meta.el.style.setProperty('--dir', -1); }
             if (meta.posX < 3)  { meta.dirX =  1; meta.el.style.setProperty('--dir',  1); }
             meta.el.style.left = meta.posX + '%';
-            requestAnimationFrame(() => setTimeout(() => roamCreature(meta), 120));
+            setTimeout(() => roamCreature(meta), 120);
         }
 
         // Spawn a few initial creatures
