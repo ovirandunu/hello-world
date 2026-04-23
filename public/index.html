@@ -3,168 +3,804 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>ARK: Hello World</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+        :root {
+            --ark-amber:   #e8a020;
+            --ark-orange:  #c85a00;
+            --ark-cyan:    #00e5ff;
+            --ark-green:   #1a3a1a;
+            --ark-dark:    #0a1208;
+            --ark-mid:     #0f1e0c;
+            --ark-fog:     rgba(20, 50, 10, 0.45);
+            --ark-panel:   rgba(8, 18, 6, 0.82);
+            --bar-hp:      #e02020;
+            --bar-stam:    #e8c020;
+            --bar-food:    #38c028;
+            --bar-water:   #1090e8;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(to bottom, #0a0e27 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--ark-dark);
             min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        /* ── Sky gradient that shifts with day/night ── */
+        #sky {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to bottom, #0a1208 0%, #0f2a0a 40%, #1a3a10 80%, #122508 100%);
+            transition: background 3s ease;
+            z-index: 0;
+        }
+        body.night #sky {
+            background: linear-gradient(to bottom, #020608 0%, #04120a 40%, #061808 80%, #030e04 100%);
+        }
+
+        /* ── Fog layers ── */
+        .fog-layer {
+            position: fixed;
+            bottom: 0;
+            width: 200%;
+            height: 280px;
+            background: linear-gradient(to top, rgba(10,30,5,0.7) 0%, rgba(20,50,10,0.3) 60%, transparent 100%);
+            animation: fog-drift linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .fog-layer:nth-child(1) { animation-duration: 28s; opacity: 0.7; }
+        .fog-layer:nth-child(2) { animation-duration: 42s; animation-delay: -14s; opacity: 0.4; height: 200px; }
+
+        @keyframes fog-drift {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ── Fireflies ── */
+        .firefly {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #aaff44;
+            box-shadow: 0 0 6px 2px #88ee22;
+            z-index: 2;
+            pointer-events: none;
+            animation: firefly-float linear infinite;
+        }
+        body.night .firefly { background: #ccff66; box-shadow: 0 0 8px 3px #aaee44; }
+
+        @keyframes firefly-float {
+            0%   { transform: translate(0, 0); opacity: 0; }
+            20%  { opacity: 1; }
+            80%  { opacity: 0.8; }
+            100% { transform: translate(var(--fx), var(--fy)); opacity: 0; }
+        }
+
+        /* ── Particles (spores / leaves) ── */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 2;
+            font-size: 1rem;
+            animation: particle-fall linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes particle-fall {
+            0%   { transform: translateY(-20px) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* ── Main UI container ── */
+        .main-ui {
+            position: fixed;
+            inset: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Animated stars background */
-        .stars {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            animation: twinkle 3s infinite;
-        }
-
-        @keyframes twinkle {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
-
-        /* Shooting stars */
-        .shooting-star {
-            position: absolute;
-            height: 2px;
-            background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
-            animation: shoot 3s linear infinite;
-        }
-
-        @keyframes shoot {
-            0% {
-                transform: translateX(0) translateY(0);
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(-300px) translateY(300px);
-                opacity: 0;
-            }
-        }
-
-        /* Main container */
-        .container {
-            text-align: center;
             z-index: 10;
-            position: relative;
+            pointer-events: none;
         }
 
-        h1 {
-            font-size: 4rem;
+        /* ── Title card ── */
+        .title-card {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            pointer-events: auto;
+        }
+
+        .ark-logo {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 900;
+            color: var(--ark-amber);
+            text-shadow:
+                0 0 10px var(--ark-amber),
+                0 0 25px var(--ark-orange),
+                0 0 50px rgba(200,90,0,0.5);
+            letter-spacing: 0.15em;
+            animation: ark-pulse 3s ease-in-out infinite;
+            cursor: default;
+        }
+
+        .ark-subtitle {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: clamp(0.9rem, 2vw, 1.3rem);
+            color: var(--ark-cyan);
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            margin-top: 0.4rem;
+            opacity: 0.85;
+            text-shadow: 0 0 8px var(--ark-cyan);
+        }
+
+        @keyframes ark-pulse {
+            0%, 100% { text-shadow: 0 0 10px var(--ark-amber), 0 0 25px var(--ark-orange); }
+            50%       { text-shadow: 0 0 20px var(--ark-amber), 0 0 45px var(--ark-orange), 0 0 70px rgba(200,90,0,0.7); }
+        }
+
+        /* ── Action buttons ── */
+        .btn-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            pointer-events: auto;
+            margin-top: 1rem;
+        }
+
+        .ark-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ark-amber);
+            background: var(--ark-panel);
+            border: 2px solid var(--ark-amber);
+            padding: 0.55rem 1.4rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 8px rgba(232,160,32,0.3), inset 0 0 6px rgba(0,0,0,0.6);
+        }
+        .ark-btn:hover {
+            background: rgba(232,160,32,0.15);
+            box-shadow: 0 0 18px rgba(232,160,32,0.7), inset 0 0 8px rgba(232,160,32,0.1);
             color: #fff;
-            text-shadow: 0 0 10px #00d9ff, 0 0 20px #00d9ff, 0 0 30px #00d9ff;
-            margin-bottom: 1rem;
-            animation: glow 2s ease-in-out infinite;
+        }
+        .ark-btn:active { transform: scale(0.96); }
+
+        .ark-btn.cyan {
+            color: var(--ark-cyan);
+            border-color: var(--ark-cyan);
+            box-shadow: 0 0 8px rgba(0,229,255,0.3);
+        }
+        .ark-btn.cyan:hover {
+            background: rgba(0,229,255,0.12);
+            box-shadow: 0 0 18px rgba(0,229,255,0.6);
+            color: #fff;
         }
 
-        @keyframes glow {
-            0%, 100% {
-                text-shadow: 0 0 10px #00d9ff, 0 0 20px #00d9ff, 0 0 30px #00d9ff;
-            }
-            50% {
-                text-shadow: 0 0 20px #00d9ff, 0 0 30px #00d9ff, 0 0 40px #00d9ff, 0 0 50px #00d9ff;
-            }
+        /* ── Survival HUD ── */
+        #hud {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.7rem;
+            z-index: 20;
+            pointer-events: none;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        p {
-            font-size: 1.5rem;
-            color: #a8b2d1;
-            margin-bottom: 2rem;
+        .stat-block {
+            background: var(--ark-panel);
+            border: 1px solid rgba(232,160,32,0.35);
+            border-radius: 4px;
+            padding: 0.35rem 0.7rem;
+            min-width: 110px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.6);
         }
 
-        .planet {
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle at 30% 30%, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            margin: 2rem auto;
-            box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
-            animation: float 6s ease-in-out infinite;
+        .stat-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 3px;
         }
 
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-20px);
-            }
+        .stat-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s ease;
         }
 
-        /* Rocket ship */
-        .rocket {
-            font-size: 3rem;
-            animation: rocket-fly 4s ease-in-out infinite;
-            display: inline-block;
+        .stat-hp    .stat-label      { color: var(--bar-hp); }
+        .stat-hp    .stat-bar-fill   { background: var(--bar-hp); box-shadow: 0 0 6px var(--bar-hp); }
+        .stat-stam  .stat-label      { color: var(--bar-stam); }
+        .stat-stam  .stat-bar-fill   { background: var(--bar-stam); box-shadow: 0 0 6px var(--bar-stam); }
+        .stat-food  .stat-label      { color: var(--bar-food); }
+        .stat-food  .stat-bar-fill   { background: var(--bar-food); box-shadow: 0 0 6px var(--bar-food); }
+        .stat-water .stat-label      { color: var(--bar-water); }
+        .stat-water .stat-bar-fill   { background: var(--bar-water); box-shadow: 0 0 6px var(--bar-water); }
+
+        .stat-value {
+            font-size: 0.75rem;
+            margin-top: 3px;
+            color: rgba(255,255,255,0.6);
         }
 
-        @keyframes rocket-fly {
-            0%, 100% {
-                transform: translateY(0px) rotate(45deg);
-            }
-            50% {
-                transform: translateY(-30px) rotate(45deg);
-            }
+        /* ── Survival timer ── */
+        #survival-timer {
+            position: fixed;
+            top: 18px;
+            right: 22px;
+            background: var(--ark-panel);
+            border: 1px solid rgba(0,229,255,0.4);
+            border-radius: 4px;
+            padding: 0.45rem 0.9rem;
+            z-index: 20;
+            text-align: right;
+            box-shadow: 0 0 12px rgba(0,229,255,0.2);
         }
+        #survival-timer .label {
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--ark-cyan);
+            opacity: 0.7;
+        }
+        #survival-timer .time {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--ark-cyan);
+            text-shadow: 0 0 6px var(--ark-cyan);
+        }
+
+        /* ── Creature counter ── */
+        #creature-counter {
+            position: fixed;
+            top: 18px;
+            left: 22px;
+            background: var(--ark-panel);
+            border: 1px solid rgba(232,160,32,0.4);
+            border-radius: 4px;
+            padding: 0.45rem 0.9rem;
+            z-index: 20;
+            box-shadow: 0 0 12px rgba(232,160,32,0.15);
+        }
+        #creature-counter .label {
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--ark-amber);
+            opacity: 0.7;
+        }
+        #creature-counter .count {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--ark-amber);
+            text-shadow: 0 0 6px var(--ark-amber);
+        }
+
+        /* ── Roaming creatures ── */
+        .creature {
+            position: fixed;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            z-index: 5;
+            cursor: pointer;
+            user-select: none;
+            transition: filter 0.2s;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+            animation: dino-bob 2s ease-in-out infinite;
+        }
+        .creature:hover {
+            filter: drop-shadow(0 0 12px var(--ark-cyan)) drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+        }
+        .creature.tamed {
+            filter: drop-shadow(0 0 14px #88ff44) drop-shadow(0 4px 8px rgba(0,0,0,0.6)) !important;
+        }
+
+        @keyframes dino-bob {
+            0%, 100% { transform: translateY(0) scaleX(var(--dir, 1)); }
+            50%       { transform: translateY(-6px) scaleX(var(--dir, 1)); }
+        }
+
+        /* Tame tooltip */
+        .tame-tip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ark-panel);
+            border: 1px solid var(--ark-cyan);
+            border-radius: 3px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
+            color: var(--ark-cyan);
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            letter-spacing: 0.1em;
+        }
+        .creature:hover .tame-tip { opacity: 1; }
+        .creature.tamed .tame-tip { color: #88ff44; border-color: #88ff44; }
+
+        /* ── Footprint spawned on click ── */
+        .footprint {
+            position: fixed;
+            font-size: 1.6rem;
+            z-index: 6;
+            pointer-events: none;
+            animation: footprint-fade 1.8s ease-out forwards;
+            transform-origin: center;
+        }
+
+        @keyframes footprint-fade {
+            0%   { opacity: 1; transform: scale(1.3); }
+            100% { opacity: 0; transform: scale(0.6) translateY(20px); }
+        }
+
+        /* ── Toast notification ── */
+        #toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ark-panel);
+            border: 1px solid var(--ark-amber);
+            border-radius: 4px;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.9rem;
+            color: var(--ark-amber);
+            letter-spacing: 0.1em;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-shadow: 0 0 6px var(--ark-amber);
+            box-shadow: 0 0 16px rgba(232,160,32,0.3);
+        }
+        #toast.show { opacity: 1; }
+
+        /* ── Dino info card ── */
+        #info-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: var(--ark-panel);
+            border: 2px solid var(--ark-amber);
+            border-radius: 6px;
+            padding: 1.5rem 2rem;
+            z-index: 50;
+            min-width: 280px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(232,160,32,0.4);
+            display: none;
+            pointer-events: auto;
+        }
+        #info-card.open {
+            display: block;
+            animation: card-pop 0.25s ease-out forwards;
+        }
+        @keyframes card-pop {
+            from { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+            to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+        }
+        #info-card .card-emoji { font-size: 3.5rem; }
+        #info-card .card-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+            color: var(--ark-amber);
+            margin: 0.5rem 0 0.2rem;
+        }
+        #info-card .card-desc { font-size: 0.85rem; color: rgba(255,255,255,0.65); margin-bottom: 1rem; }
+        #info-card .card-level { font-size: 0.8rem; color: var(--ark-cyan); margin-bottom: 1rem; letter-spacing: 0.15em; }
+        #info-card .close-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.5);
+            background: none;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 3px;
+            padding: 0.3rem 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #info-card .close-btn:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+
+        /* ── Screen overlay for night ── */
+        #night-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,20,0.55);
+            z-index: 3;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 3s ease;
+        }
+        body.night #night-overlay { opacity: 1; }
+
+        /* ── Moon / Sun indicator ── */
+        #time-orb {
+            position: fixed;
+            top: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.8rem;
+            z-index: 25;
+            pointer-events: none;
+            transition: all 2s ease;
+            filter: drop-shadow(0 0 8px rgba(255,220,100,0.7));
+        }
+        body.night #time-orb { filter: drop-shadow(0 0 10px rgba(160,200,255,0.9)); }
     </style>
 </head>
 <body>
-    <div class="stars" id="stars"></div>
-    
-    <div class="container">
-        <h1>Hello World</h1>
-        <div class="planet"></div>
-        <div class="rocket">🚀</div>
+
+    <!-- Background layers -->
+    <div id="sky"></div>
+    <div class="fog-layer"></div>
+    <div class="fog-layer"></div>
+    <div id="night-overlay"></div>
+    <div id="time-orb">☀️</div>
+
+    <!-- HUD panels -->
+    <div id="survival-timer">
+        <div class="label">Survived</div>
+        <div class="time" id="timer-display">00:00:00</div>
     </div>
 
+    <div id="creature-counter">
+        <div class="label">Tamed</div>
+        <div class="count" id="tamed-count">0 / 0</div>
+    </div>
+
+    <!-- Main UI -->
+    <div class="main-ui">
+        <div class="title-card">
+            <div class="ark-logo">⚑ ARK</div>
+            <div class="ark-subtitle">Survival &nbsp;·&nbsp; Hello World</div>
+        </div>
+
+        <div class="btn-row">
+            <button class="ark-btn" id="btn-spawn">🦕 Spawn Creature</button>
+            <button class="ark-btn cyan" id="btn-cycle">🌙 Night Cycle</button>
+            <button class="ark-btn" id="btn-feed">🍖 Feed All</button>
+        </div>
+    </div>
+
+    <!-- Stat HUD -->
+    <div id="hud">
+        <div class="stat-block stat-hp">
+            <div class="stat-label">❤ Health</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-hp" style="width:100%"></div></div>
+            <div class="stat-value" id="val-hp">100 / 100</div>
+        </div>
+        <div class="stat-block stat-stam">
+            <div class="stat-label">⚡ Stamina</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-stam" style="width:100%"></div></div>
+            <div class="stat-value" id="val-stam">100 / 100</div>
+        </div>
+        <div class="stat-block stat-food">
+            <div class="stat-label">🍖 Food</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-food" style="width:90%"></div></div>
+            <div class="stat-value" id="val-food">90 / 100</div>
+        </div>
+        <div class="stat-block stat-water">
+            <div class="stat-label">💧 Water</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="bar-water" style="width:75%"></div></div>
+            <div class="stat-value" id="val-water">75 / 100</div>
+        </div>
+    </div>
+
+    <!-- Info card -->
+    <div id="info-card">
+        <div class="card-emoji" id="card-emoji">🦕</div>
+        <div class="card-name" id="card-name">Brontosaurus</div>
+        <div class="card-level" id="card-level">Level 42 &nbsp;|&nbsp; Wild</div>
+        <div class="card-desc" id="card-desc">A gentle giant that roams the island, stripping trees of their leaves.</div>
+        <button class="ark-btn" id="card-tame-btn" style="margin-bottom:0.6rem;width:100%">🤝 Tame</button>
+        <button class="close-btn" id="card-close">DISMISS</button>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" id="toast"></div>
+
     <script>
-        // Generate random stars
-        const starsContainer = document.getElementById('stars');
-        const numberOfStars = 150;
+    (() => {
+        'use strict';
 
-        for (let i = 0; i < numberOfStars; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            star.style.width = Math.random() * 3 + 'px';
-            star.style.height = star.style.width;
-            star.style.left = Math.random() * 100 + '%';
-            star.style.top = Math.random() * 100 + '%';
-            star.style.animationDelay = Math.random() * 3 + 's';
-            starsContainer.appendChild(star);
+        // ── Dino catalogue ──────────────────────────────────────────────
+        const DINOS = [
+            { emoji: '🦕', name: 'Brontosaurus',  desc: 'Gentle giant that strips trees bare with ease.',          rarity: 'common' },
+            { emoji: '🦖', name: 'T-Rex',          desc: 'Apex predator. Tears through everything in its path.',   rarity: 'rare' },
+            { emoji: '🐉', name: 'Wyvern',         desc: 'Elemental dragon from the Scorched Earth.',              rarity: 'legendary' },
+            { emoji: '🦎', name: 'Raptor',         desc: 'Pack hunter. Fast, agile, and surprisingly smart.',      rarity: 'common' },
+            { emoji: '🐊', name: 'Sarco',          desc: 'Fearsome river predator with armoured hide.',            rarity: 'uncommon' },
+            { emoji: '🦅', name: 'Argentavis',     desc: 'Massive bird of prey — the backbone of any tribe.',      rarity: 'uncommon' },
+            { emoji: '🐘', name: 'Mammoth',        desc: 'Cold-weather giant that harvests thatch and wood.',      rarity: 'common' },
+            { emoji: '🦏', name: 'Triceratops',    desc: 'Armoured herbivore that charges predators on sight.',    rarity: 'common' },
+            { emoji: '🦑', name: 'Tusoteuthis',    desc: 'Kraken of the deep — grabs and crushes anything near.',  rarity: 'legendary' },
+            { emoji: '🦇', name: 'Onyc',           desc: 'Cave bat that stuns survivors in the dark.',             rarity: 'uncommon' },
+        ];
+
+        const FOOTPRINTS = ['🐾','👣','🦶'];
+        const RARITY_COLORS = { common: '#aaaaaa', uncommon: '#44cc44', rare: '#4488ff', legendary: '#ff8800' };
+        const MAX_CREATURES = 12;
+
+        // ── State ────────────────────────────────────────────────────────
+        let creatures = [];
+        let tamedCount = 0;
+        let isNight = false;
+        let survivalStart = Date.now();
+        let stats = { hp: 100, stam: 100, food: 90, water: 75 };
+        let selectedCreature = null;
+
+        // ── Utility ──────────────────────────────────────────────────────
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+        function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+        function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+
+        // ── Toast ────────────────────────────────────────────────────────
+        const toast = document.getElementById('toast');
+        let toastTimer;
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
         }
 
-        // Generate shooting stars
-        const numberOfShootingStars = 5;
-        
-        for (let i = 0; i < numberOfShootingStars; i++) {
-            const shootingStar = document.createElement('div');
-            shootingStar.className = 'shooting-star';
-            shootingStar.style.width = Math.random() * 100 + 50 + 'px';
-            shootingStar.style.left = Math.random() * 100 + '%';
-            shootingStar.style.top = Math.random() * 50 + '%';
-            shootingStar.style.animationDelay = Math.random() * 5 + 's';
-            shootingStar.style.animationDuration = Math.random() * 2 + 2 + 's';
-            starsContainer.appendChild(shootingStar);
+        // ── Survival timer ───────────────────────────────────────────────
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - survivalStart) / 1000);
+            const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const s = String(elapsed % 60).padStart(2, '0');
+            document.getElementById('timer-display').textContent = `${h}:${m}:${s}`;
         }
+        setInterval(updateTimer, 1000);
+
+        // ── Creature counter ─────────────────────────────────────────────
+        function updateCounter() {
+            document.getElementById('tamed-count').textContent =
+                `${tamedCount} / ${creatures.length}`;
+        }
+
+        // ── Stat bars ────────────────────────────────────────────────────
+        function updateStats() {
+            const keys = ['hp','stam','food','water'];
+            keys.forEach(k => {
+                const v = Math.round(stats[k]);
+                document.getElementById(`bar-${k}`).style.width = v + '%';
+                document.getElementById(`val-${k}`).textContent = `${v} / 100`;
+            });
+        }
+
+        // Slowly drain food & water, food drain causes hp loss
+        function tickStats() {
+            stats.food  = Math.max(0, stats.food  - rand(0.05, 0.2));
+            stats.water = Math.max(0, stats.water - rand(0.08, 0.25));
+            if (stats.food < 10) stats.hp = Math.max(0, stats.hp - rand(0.1, 0.3));
+            updateStats();
+        }
+        setInterval(tickStats, 1500);
+
+        // ── Fireflies ────────────────────────────────────────────────────
+        (function spawnFireflies() {
+            for (let i = 0; i < 28; i++) {
+                const ff = document.createElement('div');
+                ff.className = 'firefly';
+                ff.style.left = rand(0, 100) + '%';
+                ff.style.top  = rand(20, 85) + '%';
+                const dx = rand(-120, 120) + 'px';
+                const dy = rand(-80, 80) + 'px';
+                ff.style.setProperty('--fx', dx);
+                ff.style.setProperty('--fy', dy);
+                ff.style.animationDuration = rand(4, 10) + 's';
+                ff.style.animationDelay    = rand(0, 8) + 's';
+                document.body.appendChild(ff);
+            }
+        })();
+
+        // ── Floating particles ───────────────────────────────────────────
+        (function spawnParticles() {
+            const symbols = ['🍃','🌿','🍂','✨','🌱','💨'];
+            for (let i = 0; i < 18; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.textContent = pick(symbols);
+                p.style.left = rand(0, 100) + '%';
+                p.style.animationDuration = rand(8, 20) + 's';
+                p.style.animationDelay    = rand(0, 15) + 's';
+                document.body.appendChild(p);
+            }
+        })();
+
+        // ── Creature spawning ────────────────────────────────────────────
+        function spawnCreature(dinoOverride) {
+            if (creatures.length >= MAX_CREATURES) {
+                showToast('⚠ Island at capacity! Tame more to make room.');
+                return;
+            }
+            const dino = dinoOverride || pick(DINOS);
+            const el = document.createElement('div');
+            el.className = 'creature';
+
+            const tip = document.createElement('span');
+            tip.className = 'tame-tip';
+            tip.textContent = 'Click to inspect';
+            el.appendChild(tip);
+            el.appendChild(document.createTextNode(dino.emoji));
+
+            const startLeft = rand(5, 90);
+            const startTop  = rand(30, 75);
+            const dir = Math.random() > 0.5 ? 1 : -1;
+            el.style.left = startLeft + '%';
+            el.style.top  = startTop  + '%';
+            el.style.setProperty('--dir', dir);
+            el.style.animationDuration = rand(1.5, 3) + 's';
+
+            const meta = {
+                el,
+                dino,
+                level: randInt(1, 120),
+                tamed: false,
+                dirX: dir,
+                speed: rand(0.015, 0.05),
+                posX: startLeft,
+                posY: startTop,
+            };
+
+            el.addEventListener('click', () => openInfoCard(meta));
+            document.body.appendChild(el);
+            creatures.push(meta);
+            updateCounter();
+
+            // Wander animation
+            roamCreature(meta);
+            return meta;
+        }
+
+        function roamCreature(meta) {
+            if (!document.body.contains(meta.el)) return;
+            const speed = meta.speed;
+            meta.posX += meta.dirX * (speed * 100);
+            if (meta.posX > 92) { meta.dirX = -1; meta.el.style.setProperty('--dir', -1); }
+            if (meta.posX < 3)  { meta.dirX =  1; meta.el.style.setProperty('--dir',  1); }
+            meta.el.style.left = meta.posX + '%';
+            requestAnimationFrame(() => setTimeout(() => roamCreature(meta), 120));
+        }
+
+        // Spawn a few initial creatures
+        for (let i = 0; i < 4; i++) setTimeout(() => spawnCreature(), i * 600);
+
+        // ── Footprint on body click ───────────────────────────────────────
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.creature') ||
+                e.target.closest('#info-card') ||
+                e.target.closest('.ark-btn') ||
+                e.target.closest('.btn-row')) return;
+
+            const fp = document.createElement('div');
+            fp.className = 'footprint';
+            fp.textContent = pick(FOOTPRINTS);
+            fp.style.left = (e.clientX - 16) + 'px';
+            fp.style.top  = (e.clientY - 16) + 'px';
+            document.body.appendChild(fp);
+            setTimeout(() => fp.remove(), 1800);
+
+            // Drain a little stamina on click
+            stats.stam = Math.max(0, stats.stam - rand(1, 3));
+            updateStats();
+        });
+
+        // ── Info card ────────────────────────────────────────────────────
+        const infoCard  = document.getElementById('info-card');
+        const cardClose = document.getElementById('card-close');
+        const cardTame  = document.getElementById('card-tame-btn');
+
+        function openInfoCard(meta) {
+            selectedCreature = meta;
+            document.getElementById('card-emoji').textContent = meta.dino.emoji;
+            document.getElementById('card-name').textContent  = meta.dino.name;
+            document.getElementById('card-desc').textContent  = meta.dino.desc;
+            const rColor = RARITY_COLORS[meta.dino.rarity];
+            document.getElementById('card-level').innerHTML =
+                `Level ${meta.level} &nbsp;|&nbsp; <span style="color:${rColor};text-shadow:0 0 6px ${rColor}">${meta.dino.rarity.toUpperCase()}</span>`;
+
+            if (meta.tamed) {
+                cardTame.textContent = '✅ Already Tamed';
+                cardTame.disabled = true;
+                cardTame.style.opacity = '0.5';
+            } else {
+                cardTame.textContent = '🤝 Tame';
+                cardTame.disabled = false;
+                cardTame.style.opacity = '1';
+            }
+            infoCard.classList.add('open');
+        }
+
+        cardClose.addEventListener('click', () => infoCard.classList.remove('open'));
+
+        cardTame.addEventListener('click', () => {
+            if (!selectedCreature || selectedCreature.tamed) return;
+            selectedCreature.tamed = true;
+            selectedCreature.el.classList.add('tamed');
+            selectedCreature.el.querySelector('.tame-tip').textContent = '✅ Tamed!';
+            tamedCount++;
+            updateCounter();
+            // Restore food + give hp
+            stats.food  = Math.min(100, stats.food  + 8);
+            stats.hp    = Math.min(100, stats.hp    + 5);
+            updateStats();
+            showToast(`🎉 ${selectedCreature.dino.name} has been tamed!`);
+            infoCard.classList.remove('open');
+        });
+
+        // ── Spawn button ─────────────────────────────────────────────────
+        document.getElementById('btn-spawn').addEventListener('click', () => {
+            const m = spawnCreature();
+            if (m) showToast(`${m.dino.emoji} A wild ${m.dino.name} (Lvl ${m.level}) appeared!`);
+            stats.stam = Math.max(0, stats.stam - rand(5, 10));
+            updateStats();
+        });
+
+        // ── Night cycle ──────────────────────────────────────────────────
+        const cycleBtn = document.getElementById('btn-cycle');
+        const timeOrb  = document.getElementById('time-orb');
+
+        cycleBtn.addEventListener('click', () => {
+            isNight = !isNight;
+            document.body.classList.toggle('night', isNight);
+            timeOrb.textContent   = isNight ? '🌕' : '☀️';
+            cycleBtn.textContent  = isNight ? '☀️ Day Cycle' : '🌙 Night Cycle';
+            showToast(isNight ? '🌙 Night falls on the island…' : '☀️ A new day dawns on the ARK!');
+        });
+
+        // ── Feed all ─────────────────────────────────────────────────────
+        document.getElementById('btn-feed').addEventListener('click', () => {
+            stats.food  = Math.min(100, stats.food  + 25);
+            stats.water = Math.min(100, stats.water + 20);
+            stats.hp    = Math.min(100, stats.hp    + 10);
+            updateStats();
+            showToast('🍖 You ate Narcoberry stew. Stats restored!');
+        });
+
+        // ── Stamina regen when idle ──────────────────────────────────────
+        setInterval(() => {
+            stats.stam = Math.min(100, stats.stam + rand(0.5, 1.5));
+            updateStats();
+        }, 800);
+
+        updateStats();
+        updateCounter();
+    })();
     </script>
 </body>
 </html>
